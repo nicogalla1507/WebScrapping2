@@ -29,50 +29,48 @@ try:
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "vehiculo")))
         
         # Obtener el elemento <select>
-        catalogo = driver.find_element(By.ID, "vehiculo")
+        vehiculos = driver.find_element(By.ID, "vehiculo")
         
-        if catalogo:
+        if vehiculos:
             print("Elemento encontrado.")
-            select_categoria = Select(catalogo) 
-            
-
-            select_categoria.select_by_value("1")
+            select_categoria = Select(vehiculos) 
+            select_categoria.select_by_value("1")  # Seleccionar "Auto"
             print("Categoría seleccionada:", select_categoria.first_selected_option.text)
-            #AHORA LAS MARCAS
-            buscar_btn = driver.find_element(By.ID,"buscarTipo-filtros")
-            marcas = driver.find_elements(By.ID,"marca-filtros")
-            for marca in marcas:
-                print(f"ACCEDIENDO A: {marca.text}")
-                time.sleep(1)   
-                print("\n")
-            modelos_click = buscar_btn.click()
-            modelos = driver.find_elements(By.ID,"modelo-filtros")
-            modelos_select = Select(modelos)
-            
-            if marcas:
 
-                try:
-                        #APRETO EL BOTON
-                        WebDriverWait(driver, 2).until(EC.alert_is_present())
-                        alert = driver.switch_to.alert
-                        print("Alerta detectada:", alert.text)
-                        alert.accept()
-                        modelos = driver.find_elements(By.ID, "modelo-filtros")  # Ajustar el selector si es necesario
-                except:
-                    pass
+            # Hacer clic en el botón para buscar marcas
+
+            # Esperar a que las marcas se carguen
+            marcas = driver.find_elements(By.ID, "marca-filtros")  # Ajustar el selector si es necesario
+
+                
+            if marcas:
+                print("SE ACCEDIO A MARCAS")
+                for marca in marcas:
+                    
+                    print(f"ACCEDIENDO A: {marca.text}")
+                    time.sleep(1)
+                    
+                    # Esperar a que los modelos se carguen
+                    modelos = driver.find_elements(By.ID,"modelo-filtros")  # Ajustar el selector si es necesario
+                    
                     if modelos:
                         print("Modelos encontrados:")
                         for modelo in modelos:
+                            time.sleep(1)
                             print(f"ACCEDIENDO A: {modelo.text}")
                     else:
                         print("NO SE ENCONTRARON MODELOS ")
                     
                     driver.back()  # Volver a la página anterior para seleccionar otra marca
-                    time.sleep(1)
-            
+                    time.sleep(1)  # Esperar un segundo antes de continuar
+                    # Esperar a que la página de marcas se recargue
+                    WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "marca-filtros")))
+
+            else:
+                print("NO SE ENCONTRARON MARCAS ")
         else:
             print(f"NO SE ENCONTRO NADA EN {url_a_buscar2}")
-    
+
 finally:
     time.sleep(2)  # Esperar un momento para ver los resultados
     driver.quit()  # Cerrar el navegador
