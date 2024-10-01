@@ -9,6 +9,10 @@ distribuidores = []
 opcion = input("Ingrese a donde desea ir: ").strip()
 url = f"https://wega.com.ar/es/{opcion}/"
 driver = webdriver.Chrome()
+marcas_modelos = {}
+valores = []
+cont = 0
+cont_marca = 0
 
 try:
     if opcion == "distribuidores":
@@ -45,32 +49,52 @@ try:
                 
             if marcas:
                 print("SE ACCEDIO A MARCAS")
-                for marca in marcas:
-                    
+                while cont_marca < len(marcas):  # Iterar sobre las marcas
+                    marca = marcas[cont_marca]
+                    marca_nombre = marca.text
                     print(f"ACCEDIENDO A: {marca.text}")
+                    marca.click()
+                    time.sleep(1)
+                for marca in marcas:
+                    marca_nombre = marca.text
+                    print(f"ACCEDIENDO A: {marca.text}")
+                    marca.click()
                     time.sleep(1)
                     
                     # Esperar a que los modelos se carguen
-                    modelos = driver.find_elements(By.ID,"modelo-filtros")  # Ajustar el selector si es necesario
+                    # Ajustar el selector si es necesario
+                    modelos_select = Select(driver.find_element(By.ID, "modelo-filtros"))
                     
-                    if modelos:
-                        print("Modelos encontrados:")
-                        for modelo in modelos:
-                            time.sleep(1)
-                            print(f"ACCEDIENDO A: {modelo.text}")
-                    else:
-                        print("NO SE ENCONTRARON MODELOS ")
                     
-                    driver.back()  # Volver a la página anterior para seleccionar otra marca
-                    time.sleep(1)  # Esperar un segundo antes de continuar
-                    # Esperar a que la página de marcas se recargue
-                    WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "marca-filtros")))
+                    if modelos_select.options:
+                        print(f"Modelos disponibles para la marca {marca_nombre}:")
+                        cont_modelo = 0  # Inicializar contador para modelos
+                        while cont_modelo < len(modelos_select.options):  # Iterar sobre los modelos
+                            option = modelos_select.options[cont_modelo]
+                            value = option.get_attribute("value")  # Obtener el valor de la opción
+                            text = option.text  # Obtener el texto de la opción
+
+                            # Imprimir el valor y el texto
+                            print(f"Modelo: {text}, Value: {value}")
+
+                            # Seleccionar el modelo por su valor
+                            modelos_select.select_by_value(value)
+                            time.sleep(1)  # Esperar un momento después de la selección
+                            cont_modelo += 1  # Incrementar el contador de modelos
+                            
+                            
+
+                    time.sleep(1)
+                   
 
             else:
                 print("NO SE ENCONTRARON MARCAS ")
         else:
             print(f"NO SE ENCONTRO NADA EN {url_a_buscar2}")
+except Exception as e:
+    print("ERROR",e)
 
-finally:
-    time.sleep(2)  # Esperar un momento para ver los resultados
-    driver.quit()  # Cerrar el navegador
+time.sleep(2)  # Esperar un momento para ver los resultados
+ # Cerrar el navegador
+
+driver.quit() 
