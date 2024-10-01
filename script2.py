@@ -4,6 +4,7 @@ from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 
+
 class WebDriverManager:
     def __init__(self, url):
         self.url = url
@@ -42,63 +43,36 @@ class Catalogo:
         select_categoria.select_by_value(value)
         print("Categoría seleccionada:", select_categoria.first_selected_option.text)
 
-    def fetch_marcas(self):
-        marcas = self.driver.find_elements(By.ID, "marca-filtros")  
-        
-        if marcas:
-            print("SE ACCEDIO A MARCAS")
-            for marca in marcas:
-                marca_nombre = marca.text.strip()  # Obtiene el nombre de la marca
-                print(f"MARCA: {marca_nombre}") 
-                
 
-                 # Ajusta el selector según la estructura
-        else:
-            print("No se encontraron marcas.")        
+    def fetch_modelos_marca(self):
+        try:
+
+            sel_marcas = self.driver.find_element(By.ID, "marca-filtros")
+            seleccionar_marca = Select(sel_marcas)
 
 
+            for marca in seleccionar_marca.options:
+                print(f"Seleccionando Marca: {marca.text}")
+                seleccionar_marca.select_by_visible_text(marca.text)
+                time.sleep(2)  
 
 
-    def fetch_modelos(self):
-        indexx = []
-        cont = 0
-        
-        # Espera hasta que el elemento <select> sea visible
-        modelos = WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located((By.ID, "modelo-filtros"))
-        )
-        
-        # Crea un objeto Select con el elemento encontrado
-        var = Select(modelos)
-        
-        # Obtén el número total de opciones
-        total_opciones = len(var.options)
-        
-        # Genera índices hasta 5000 o hasta que se acaben las opciones
-        while cont < 5000 and cont < total_opciones:
-            indexx.append(cont)
-            cont += 1
+                sel_modelos = self.driver.find_element(By.ID, "modelo-filtros")
+                seleccionar_modelo = Select(sel_modelos)
 
-        # Selecciona opciones por índice y las imprime
-        for i in indexx:
-            try:
-                var.select_by_index(i)
-                print(f"Seleccionado índice: {i}, Opción: {var.options[i].text}")
-            except Exception as e:
-                print(f"Error al seleccionar índice {i}: {e}")
 
-        # Obtiene y muestra todas las opciones disponibles
-        opciones = var.options
-        if opciones:
-            for modelo in opciones:
-                time.sleep(1)  # Pausa de 1 segundo entre impresiones
-                print(f"ACCEDIO: {modelo.text} - Value: {modelo.get_attribute('value')}")
-        else:
-            print("No hay opciones disponibles.")
+                for modelo in seleccionar_modelo.options:
+                    print(f"Modelo para {marca.text}: {modelo.text}")
 
-           
-    
-    
+                time.sleep(2)
+
+        except Exception as e:
+            print(f"Ocurrió un error: {str(e)}") 
+
+
+
+
+
 def main():
     opcion = input("Ingrese a donde desea ir: ").strip()
     url = f"https://wega.com.ar/es/{opcion}/"
@@ -119,8 +93,8 @@ def main():
             
             catalogo = Catalogo(web_driver_manager.driver)
             catalogo.select_categoria("1")  # Seleccionar "Auto"
-            catalogo.fetch_marcas()
-            catalogo.fetch_modelos()
+            catalogo.fetch_modelos_marca()
+
 
     except Exception as e:
         print("ERROR", e)
