@@ -3,6 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
+import random
 
 
 class WebDriverManager:
@@ -62,16 +63,24 @@ class Catalogo:
 
 
                 for modelo in seleccionar_modelo.options:
-                    print(f"Modelo para {marca.text}: {modelo.text}")
 
+                    print(f"Modelo para {marca.text}: {modelo.text}")
+                    boton = WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable((By.ID, "buscarTipo-filtros")))
+                    boton.click()
+                    specs = WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_all_elements_located((By.CLASS_NAME, "js-intercambiable-th")))
+                    for s in specs:
+                        print(f"Especificacion de {modelo.text} {s.text}")
                 time.sleep(2)
 
+
         except Exception as e:
-            print(f"Ocurrió un error: {str(e)}") 
+            print(f"Ocurrió un error: {str(e)}")
 
-
-
-
+        
+    def buscar_codigo(self):
+        pass
 
 def main():
     opcion = input("Ingrese a donde desea ir: ").strip()
@@ -92,7 +101,8 @@ def main():
             WebDriverWait(web_driver_manager.driver, 10).until(EC.presence_of_element_located((By.ID, "vehiculo")))
             
             catalogo = Catalogo(web_driver_manager.driver)
-            catalogo.select_categoria("1")  # Seleccionar "Auto"
+            catalogo.select_categoria("1")
+            time.sleep(2)
             catalogo.fetch_modelos_marca()
 
 
