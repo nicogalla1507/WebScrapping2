@@ -105,35 +105,49 @@ class CatalogoPiezas:
 
     def open(self, url):
         self.driver.get(url)
-
+        
     def select_categoria(self):
- 
         cont = 0
-        codigos = self.driver.find_elements(By.CLASS_NAME, "title-dark")
         todos_los_codigos = []  
 
 
-        while cont < 8:
-            strnumero = str(cont + 1)
-            boton = self.driver.find_element(By.LINK_TEXT, strnumero)
-            boton.click()  
-            
+        codigos = self.driver.find_elements(By.CLASS_NAME, "title-dark")
 
-            time.sleep(2)  
+        while cont < len(codigos): 
+            try:
 
-            codigos = self.driver.find_elements(By.CLASS_NAME, "title-dark")
-            
+                boton = self.driver.find_element(By.CLASS_NAME, "more")  
+                boton.click()  
+                time.sleep(2)  
 
-            for f in codigos:
-                todos_los_codigos.append(f.text)  
-            cont += 1
-            self.driver.back()  
+                specs = self.driver.find_element(By.CLASS_NAME, "content-hidden")
+                todos_los_codigos.append(specs.text) 
+                print(specs.text)     
+                try:
+                    boton2 = self.driver.find_element(By.ID, "vermas2")
+                    boton2.click()
+                    time.sleep(2)  
 
-        # Imprime todos los códigos encontrados
-            for codigo in todos_los_codigos:
-                print(codigo)
+                    specs_aplicaciones = self.driver.find_element(By.CLASS_NAME, "aplicaciones")
+                    todos_los_codigos.append(specs_aplicaciones.text)
+                    print(specs_aplicaciones.text)
 
+                except Exception as e:
+                    print(f"No se encontró el segundo botón 'Ver más': {e}")
+                self.driver.back()
+                time.sleep(2) 
+                codigos = self.driver.find_elements(By.CLASS_NAME, "title-dark")
+                cont += 1  
 
+            except Exception as e:
+                print(f"Ocurrió un error: {e}")
+                self.driver.back()  
+                time.sleep(2)
+                codigos = self.driver.find_elements(By.CLASS_NAME, "title-dark")
+                continue
+
+        for idx, c in enumerate(todos_los_codigos, 1):
+            print(f"CÓDIGO {idx}: {c}")
               
 
 def main():
