@@ -1,8 +1,9 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import time
-from selenium.webdriver.common.action_chains import ActionChains
 
 class WebDriverManager:
     def __init__(self, url):
@@ -98,6 +99,42 @@ class Catalogo:
 
         except Exception as e:
             print(f"Ocurrió un error: {str(e)}")
+class CatalogoPiezas:
+    def __init__(self, driver):
+        self.driver = driver
+
+    def open(self, url):
+        self.driver.get(url)
+
+    def select_categoria(self):
+ 
+        cont = 0
+        codigos = self.driver.find_elements(By.CLASS_NAME, "title-dark")
+        todos_los_codigos = []  
+
+
+        while cont < 8:
+            strnumero = str(cont + 1)
+            boton = self.driver.find_element(By.LINK_TEXT, strnumero)
+            boton.click()  
+            
+
+            time.sleep(2)  
+
+            codigos = self.driver.find_elements(By.CLASS_NAME, "title-dark")
+            
+
+            for f in codigos:
+                todos_los_codigos.append(f.text)  
+            cont += 1
+            self.driver.back()  
+
+        # Imprime todos los códigos encontrados
+            for codigo in todos_los_codigos:
+                print(codigo)
+
+
+              
 
 def main():
     opcion = input("Ingrese a donde desea ir: ").strip()
@@ -120,12 +157,19 @@ def main():
             catalogo = Catalogo(web_driver_manager.driver)
             catalogo.select_categoria("1")
             catalogo.fetch_modelos_marca()
-
+        
+        elif opcion == "piezas":
+            url_piezas = "https://wega.com.ar/es/fichas_filtros_habitaculos"
+            piezas = CatalogoPiezas(web_driver_manager.driver)  # Pasar solo el driver
+            piezas.open(url_piezas)  # Cargar la URL en el método open
+            piezas.select_categoria()
+            
     except Exception as e:
-        print("ERROR", e)
+        print("ERROR:", e)
     finally:
-        time.sleep(2)
-        web_driver_manager.quit()
+        if web_driver_manager.driver:
+            time.sleep(2)
+            web_driver_manager.quit()
 
 if __name__ == "__main__":
     main()
