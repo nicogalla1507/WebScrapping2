@@ -4,6 +4,8 @@ from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
+from bs4 import BeautifulSoup
+
 
 class WebDriverManager:
     def __init__(self, url):
@@ -92,8 +94,6 @@ class Catalogo:
                     specs_combustible = self.driver.find_elements(By.LINK_TEXT,"Combustible")
                     specs_hab = self.driver.find_elements(By.LINK_TEXT,"Habitáculo")
                     print("SE ENCONTROOO")
-                    
-                    
                     print(f"Especificaciones cargadas para {marca.text} - {modelo.text}:")
 
 
@@ -107,50 +107,76 @@ class CatalogoPiezas:
         self.driver.get(url)
         
     def select_categoria(self):
-        cont = 0
-        todos_los_codigos = []  
-
-
+        
+        todos_los_codigos = []
         codigos = self.driver.find_elements(By.CLASS_NAME, "title-dark")
+        titulos = []
 
-        while cont < len(codigos): 
+
+        for cod in codigos:
+            cod_texto= cod.text.strip()
+            print(cod_texto)
+            title_element = self.driver.find_element(By.XPATH, f"//h2[contains(@class, 'title-dark') and text()='{cod_texto}']")
+            parent_div = title_element.find_element(By.XPATH, "./ancestor::div[@class='row']")
+            ver_mas_button = parent_div.find_element(By.XPATH, ".//a[contains(text(), 'Ver más')]")
+            titulos.append(title_element.text)
             try:
+                codigos
 
-                boton = self.driver.find_element(By.CLASS_NAME, "more")  
-                boton.click()  
+                #boton.click()
+                ver_mas_button.click()
                 time.sleep(2)  
 
-                specs = self.driver.find_element(By.CLASS_NAME, "content-hidden")
-                todos_los_codigos.append(specs.text) 
-                print(specs.text)     
-                try:
-                    boton2 = self.driver.find_element(By.ID, "vermas2")
+                aplicacion = self.driver.find_element(By.TAG_NAME, "h3").text
+                specs = self.driver.find_element(By.CLASS_NAME, "aplicaciones").text
+                if specs:
+                    boton2 = self.driver.find_element(By.ID,"vermas2")
                     boton2.click()
-                    time.sleep(2)  
+                    time.sleep(2)
+                self.driver.back()
 
-                    specs_aplicaciones = self.driver.find_element(By.CLASS_NAME, "aplicaciones")
-                    todos_los_codigos.append(specs_aplicaciones.text)
-                    print(specs_aplicaciones.text)
+                todos_los_codigos.append({
+                    'aplicacion': aplicacion,
+                    'especificaciones': specs
+                })
+
+                print(f" Aplicación: {aplicacion}, Especificaciones: {specs}")
+
+                # Hacer clic en el botón 'Ver más' si está presente
+                try:
+                    
+
+                    # Extraer especificaciones expandidas
+                    
+                    print(f"Especificaciones expandida: {specs}")
+
+                    # Volver a la página anterior
+                    
+                    time.sleep(2)
 
                 except Exception as e:
-                    print(f"No se encontró el segundo botón 'Ver más': {e}")
-                self.driver.back()
-                time.sleep(2) 
-                codigos = self.driver.find_elements(By.CLASS_NAME, "title-dark")
-                cont += 1  
+                    print(f"No se encontró el botón 'Ver más': {e}")
+                    self.driver.back()
+                    time.sleep(2)
+
+                # Volver a obtener los códigos después de regresar
+
+                  # Salir del bucle para comenzar de nuevo
 
             except Exception as e:
-                print(f"Ocurrió un error: {e}")
-                self.driver.back()  
+                print(f"Ocurrió un error al procesar el código: {e}")
+                self.driver.back()  # Volver a la página anterior en caso de error
                 time.sleep(2)
-                codigos = self.driver.find_elements(By.CLASS_NAME, "title-dark")
-                continue
-
-        for idx, c in enumerate(todos_los_codigos, 1):
-            print(f"CÓDIGO {idx}: {c}")
+                    
+        # Mostrar todos los códigos extraídos
+        for idx, codigo in enumerate(todos_los_codigos, 1):
+            print(f"CÓDIGO {idx}: {codigo}")
+        return todos_los_codigos
+                
               
 
 def main():
+    
     opcion = input("Ingrese a donde desea ir: ").strip()
     url = f"https://wega.com.ar/es/{opcion}/"
     
@@ -174,8 +200,8 @@ def main():
         
         elif opcion == "piezas":
             url_piezas = "https://wega.com.ar/es/fichas_filtros_habitaculos"
-            piezas = CatalogoPiezas(web_driver_manager.driver)  # Pasar solo el driver
-            piezas.open(url_piezas)  # Cargar la URL en el método open
+            piezas = CatalogoPiezas(web_driver_manager.driver)
+            piezas.open(url_piezas)
             piezas.select_categoria()
             
     except Exception as e:
