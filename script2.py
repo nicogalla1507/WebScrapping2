@@ -111,15 +111,19 @@ class CatalogoPiezas:
         todos_los_codigos = []
         codigos = self.driver.find_elements(By.CLASS_NAME, "title-dark")
         titulos = []
-
-
-        for cod in codigos:
-            cod_texto= cod.text.strip()
-            print(cod_texto)
-            title_element = self.driver.find_element(By.XPATH, f"//h2[contains(@class, 'title-dark') and text()='{cod_texto}']")
+        cont = 0
+        for c in codigos:
+            titulos.append(c.text.strip())
+        print(titulos)
+        while cont<10:
+            nombre = titulos[cont]
+            print(f"Procesando el producto {cont+1}: {nombre}")
+            
+            title_element = self.driver.find_element(By.XPATH, f"//h2[contains(@class, 'title-dark') and text()='{nombre}']")
             parent_div = title_element.find_element(By.XPATH, "./ancestor::div[@class='row']")
             ver_mas_button = parent_div.find_element(By.XPATH, ".//a[contains(text(), 'Ver más')]")
             titulos.append(title_element.text)
+            cont +=1
             try:
                 codigos
 
@@ -141,16 +145,11 @@ class CatalogoPiezas:
                 })
 
                 print(f" Aplicación: {aplicacion}, Especificaciones: {specs}")
+            
 
-                # Hacer clic en el botón 'Ver más' si está presente
                 try:
                     
-
-                    # Extraer especificaciones expandidas
-                    
-                    print(f"Especificaciones expandida: {specs}")
-
-                    # Volver a la página anterior
+                    print(f"Especificaciones expandida: {specs}")   
                     
                     time.sleep(2)
 
@@ -159,14 +158,70 @@ class CatalogoPiezas:
                     self.driver.back()
                     time.sleep(2)
 
-                # Volver a obtener los códigos después de regresar
+            except Exception as e:
+                print(f"Ocurrió un error al procesar el código: {e}")
+                self.driver.back()  
+                time.sleep(2)      
+        
+    def categoria2(self):       
+        todos_los_codigos = []
+        codigos = self.driver.find_elements(By.CLASS_NAME, "title-dark")
+        titulos = []
+        cont = 0
 
-                  # Salir del bucle para comenzar de nuevo
+        for c in codigos:
+            titulos.append(c.text.strip())
+        print(titulos)
+        while cont <10:
+            boton = self.driver.find_element()
+            cont +=1
+            nombre = titulos[cont]
+            print(f"Procesando el producto {cont+1}: {nombre}")
+            
+            title_element = self.driver.find_element(By.XPATH, f"//h2[contains(@class, 'title-dark') and text()='{nombre}']")
+            parent_div = title_element.find_element(By.XPATH, "./ancestor::div[@class='row']")
+            ver_mas_button = parent_div.find_element(By.XPATH, ".//a[contains(text(), 'Ver más')]")
+            titulos.append(title_element.text)
+            
+            try:
+                codigos
+
+                #boton.click()
+                ver_mas_button.click() 
+
+                aplicacion = self.driver.find_element(By.TAG_NAME, "h3").text
+                specs = self.driver.find_element(By.CLASS_NAME, "aplicaciones").text
+                if specs:
+                    boton2 = self.driver.find_element(By.ID,"vermas2")
+                    boton2.click()
+
+                self.driver.back()
+
+                todos_los_codigos.append({
+                    'aplicacion': aplicacion,
+                    'especificaciones': specs
+                })
+
+                print(f" Aplicación: {aplicacion}, Especificaciones: {specs}")
+                try:
+                    
+                    print(f"Especificaciones expandida: {specs}")   
+                    
+
+
+                except Exception as e:
+                    print(f"No se encontró el botón 'Ver más': {e}")
+                    self.driver.back()
+
 
             except Exception as e:
                 print(f"Ocurrió un error al procesar el código: {e}")
-                self.driver.back()  # Volver a la página anterior en caso de error
-                time.sleep(2)
+                self.driver.back()  
+      
+                
+            
+            
+
                     
         # Mostrar todos los códigos extraídos
         for idx, codigo in enumerate(todos_los_codigos, 1):
@@ -203,7 +258,9 @@ def main():
             piezas = CatalogoPiezas(web_driver_manager.driver)
             piezas.open(url_piezas)
             piezas.select_categoria()
-            
+            if piezas.select_categoria():
+                piezas.categoria2()
+
     except Exception as e:
         print("ERROR:", e)
     finally:
