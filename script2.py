@@ -110,276 +110,91 @@ class CatalogoPiezas:
         
         todos_los_codigos = []
         codigos = self.driver.find_elements(By.CLASS_NAME, "title-dark")
-        titulos = []
-        cont = 0
-        for c in codigos:
-            titulos.append(c.text.strip())
+        titulos = [c.text.strip() for c in codigos]  # Recoge los títulos
         print(titulos)
-        while cont<10:
-            nombre = titulos[cont]
-            print(f"Procesando el producto {cont+1}: {nombre}")
-            
-            title_element = self.driver.find_element(By.XPATH, f"//h2[contains(@class, 'title-dark') and text()='{nombre}']")
-            parent_div = title_element.find_element(By.XPATH, "./ancestor::div[@class='row']")
-            ver_mas_button = parent_div.find_element(By.XPATH, ".//a[contains(text(), 'Ver más')]")
-            titulos.append(title_element.text)
-            cont +=1
+
+        cont = 0
+        cont_pagina = 1
+        nombre2 = ""  # Inicializa nombre2 para evitar el error
+
+        while cont < 10:
             try:
-                codigos
 
-                #boton.click()
-                ver_mas_button.click()
-                time.sleep(2)  
-
-                aplicacion = self.driver.find_element(By.TAG_NAME, "h3").text
-                specs = self.driver.find_element(By.CLASS_NAME, "aplicaciones").text
-                if specs:
-                    boton2 = self.driver.find_element(By.ID,"vermas2")
-                    boton2.click()
-                    time.sleep(2)
-                    equivalencias = self.driver.find_elements(By.CLASS_NAME,"block-table")
-                    try:
-                        boton3 = self.driver.find_element(By.ID,"vermas-eq")
-                    
-                        if equivalencias:
-                            boton_click = boton3.click()
-                            if boton_click:
-                                lista_eq = []
-                                for e in equivalencias:
-                                    lista_eq.append(e.text.strip())
-                                print(lista_eq)
-                            
-                    except NoSuchElementException:
-                        print("error, no se encontro el elemento boton")
-                    
-                    dimensiones = self.driver.find_elements(By.CLASS_NAME,"tabla-sub-head")
-                    lista_dimensiones = []
-                    if dimensiones:
-                        for d in dimensiones:
-                            lista_dimensiones.append(d.text.strip())
-                        print(lista_dimensiones)
-                self.driver.back()
-
-                todos_los_codigos.append({
-                    'aplicacion': aplicacion,
-                    'especificaciones': specs
-                })
-
-                print(f" Aplicación: {aplicacion}, Especificaciones: {specs}")
-            
-
-                try:
-                    
-                    print(f"Especificaciones expandida: {specs}")   
-                    
-                    time.sleep(2)
-
-                except Exception as e:
-                    print(f"No se encontró el botón 'Ver más': {e}")
-                    self.driver.back()
-                    time.sleep(2)
-
-            except Exception as e:
-                print(f"Ocurrió un error al procesar el código: {e}")
-                self.driver.back()  
-                time.sleep(2)
-        else:
-            cont = 0
-            try:
-                # Hacer clic en el botón de pasar página
-                boton_pasar = self.driver.find_element(By.XPATH, "//*[@id='paginador']/nav/ul/li[2]/a")
-                boton_pasar.click()
-                time.sleep(2)
-                
-                # Actualizar los códigos en la nueva página
-                codigos = self.driver.find_elements(By.CLASS_NAME, "title-dark")
-                titulos = [x.text.strip() for x in codigos]
-                
-                while cont < 10:
+                if cont_pagina == 1:
                     nombre = titulos[cont]
-                    print(f"Procesando el producto {cont + 1}: {nombre}")
-                    
-                    title_element = self.driver.find_element(By.XPATH, f"//h2[contains(@class, 'title-dark') and text()='{nombre}']")
-                    parent_div = title_element.find_element(By.XPATH, "./ancestor::div[@class='row']")
-                    ver_mas_button = parent_div.find_element(By.XPATH, ".//a[contains(text(), 'Ver más')]")
-                    
-                    try:
-                        ver_mas_button.click()
-                        time.sleep(2)
-                        
-                        aplicacion = self.driver.find_element(By.TAG_NAME, "h3").text
-                        specs = self.driver.find_element(By.CLASS_NAME, "aplicaciones").text
-                        
-                        if specs:
-                            boton2 = self.driver.find_element(By.ID, "vermas2")
-                            boton2.click()
-                            time.sleep(2)
-                            equivalencias = self.driver.find_elements(By.CLASS_NAME, "block-table")
-                            
-                            try:
-                                boton3 = self.driver.find_element(By.ID, "vermas-eq")
-                                if equivalencias:
-                                    boton3.click()
-                                    lista_eq = [e.text.strip() for e in equivalencias]
-                                    print(lista_eq)
-                            except NoSuchElementException:
-                                print("Error: no se encontró el botón 'vermas-eq'.")
-                            
-                            dimensiones = self.driver.find_elements(By.CLASS_NAME, "tabla-sub-head")
-                            lista_dimensiones = [d.text.strip() for d in dimensiones]
-                            print(lista_dimensiones)
-                        
-                        # Guardar los datos en la lista de códigos
-                        todos_los_codigos.append({
-                            'aplicacion': aplicacion,
-                            'especificaciones': specs
-                        })
-                        print(f"Aplicación: {aplicacion}, Especificaciones: {specs}")
-                        
-                        self.driver.back()
-                    
-                    except Exception as e:
-                        print(f"Ocurrió un error al procesar el producto: {e}")
-                        self.driver.back()
-                    
-                    cont += 1
+                else:
+                    nombre = titulos2[cont]
 
-            except NoSuchElementException:
-                print("No se encontró el botón de pasar página.")
-        
-        while cont <10:
-            cont = 0
-            try:
-
-                boton_pasar = self.driver.find_element(By.XPATH, "//*[@id='paginador']/nav/ul/li[3]/a")
-                boton_pasar.click()
-                time.sleep(2)
-                codigos = self.driver.find_elements(By.CLASS_NAME, "title-dark")
-                titulos = [x.text.strip() for x in codigos]
-                nombre = titulos[cont]
-                print(f"Procesando el producto {cont + 1}: {nombre}")
-                
                 title_element = self.driver.find_element(By.XPATH, f"//h2[contains(@class, 'title-dark') and text()='{nombre}']")
+                
+
                 parent_div = title_element.find_element(By.XPATH, "./ancestor::div[@class='row']")
                 ver_mas_button = parent_div.find_element(By.XPATH, ".//a[contains(text(), 'Ver más')]")
                 
-                try:
-                    ver_mas_button.click()
-                    time.sleep(2)
-                    
-                    aplicacion = self.driver.find_element(By.TAG_NAME, "h3").text
-                    specs = self.driver.find_element(By.CLASS_NAME, "aplicaciones").text
-                    
-                    if specs:
+
+                ver_mas_button.click()
+                
+                enlace_imagen = self.driver.find_element(By.TAG_NAME,"img")
+                
+                src = enlace_imagen.get_attribute('src')
+
+                
+                aplicacion = self.driver.find_element(By.TAG_NAME, "h3").text
+                specs = self.driver.find_element(By.CLASS_NAME, "aplicaciones").text
+                print(f"Aplicación: {aplicacion}, Especificaciones: {specs}")
+
+                if specs:
+
+                    try:
                         boton2 = self.driver.find_element(By.ID, "vermas2")
                         boton2.click()
-                        time.sleep(2)
+
                         equivalencias = self.driver.find_elements(By.CLASS_NAME, "block-table")
-                        
-                        try:
-                            boton3 = self.driver.find_element(By.ID, "vermas-eq")
-                            if equivalencias:
-                                boton3.click()
-                                lista_eq = [e.text.strip() for e in equivalencias]
-                                print(lista_eq)
-                        except NoSuchElementException:
-                            print("Error: no se encontró el botón 'vermas-eq'.")
-                        
+                        if equivalencias:
+                            lista_eq = [e.text.strip() for e in equivalencias]
+                            print(lista_eq)
+
+                        boton3 = self.driver.find_element(By.ID, "vermas-eq")
+                        boton3.click()
+
                         dimensiones = self.driver.find_elements(By.CLASS_NAME, "tabla-sub-head")
                         lista_dimensiones = [d.text.strip() for d in dimensiones]
                         print(lista_dimensiones)
-                    
-                    # Guardar los datos en la lista de códigos
-                    todos_los_codigos.append({
-                        'aplicacion': aplicacion,
-                        'especificaciones': specs
-                    })
-                    print(f"Aplicación: {aplicacion}, Especificaciones: {specs}")
-                    
-                    self.driver.back()
+                    except NoSuchElementException:
+                        print("No se encontró el botón para expandir más detalles.")
                 
-                except Exception as e:
-                    print(f"Ocurrió un error al procesar el producto: {e}")
-                    self.driver.back()
-                
-                cont += 1
 
-            except NoSuchElementException:
-                print("No se encontró el botón de pasar página.")
-
-
-                    
-        
-    def categoria2(self):       
-        todos_los_codigos = []
-        codigos = self.driver.find_elements(By.CLASS_NAME, "title-dark")
-        titulos = []
-        cont = 0
-        boton = self.driver.find_element(By.LINK_TEXT,"2")
-        boton.click()
-        for c in codigos:
-            titulos.append(c.text.strip())
-        print(titulos)
-        while cont <10:
-            
-            cont +=1
-            nombre = titulos[cont]
-            print(f"Procesando el producto {cont+1}: {nombre}")
-            
-            title_element = self.driver.find_element(By.XPATH, f"//h2[contains(@class, 'title-dark') and text()='{nombre}']")
-            parent_div = title_element.find_element(By.XPATH, "./ancestor::div[@class='row']")
-            ver_mas_button = parent_div.find_element(By.XPATH, ".//a[contains(text(), 'Ver más')]")
-            titulos.append(title_element.text)
-            
-            try:
-                codigos
-
-                #boton.click()
-                ver_mas_button.click() 
-
-                aplicacion = self.driver.find_element(By.TAG_NAME, "h3").text
-                specs = self.driver.find_element(By.CLASS_NAME, "aplicaciones").text
-                if specs:
-                    boton2 = self.driver.find_element(By.ID,"vermas2")
-                    boton2.click()
-                    equivalencias_titulo = self.driver.find_element(By.CLASS_NAME,"tabla-head")
-                    if equivalencias_titulo:
-                        print(equivalencias_titulo.text)
-                        equivalencias = self.driver.find_element(By.CLASS_NAME,"eq-hidden")
                 self.driver.back()
-
                 todos_los_codigos.append({
                     'aplicacion': aplicacion,
-                    'especificaciones': specs
+                    'especificaciones': specs,
+                    'URL':src
                 })
-
-                print(f" Aplicación: {aplicacion}, Especificaciones: {specs}")
-                try:
-                    
-                    print(f"Especificaciones expandida: {specs}")   
-                    
+                cont += 1
 
 
-                except Exception as e:
-                    print(f"No se encontró el botón 'Ver más': {e}")
-                    self.driver.back()
-
-
+                if cont == 10:
+                    cont = 0
+                    cont_pagina += 1
+                    titulos2 = []
+                    try:
+                        boton_paginador = self.driver.find_element(By.XPATH, f"//*[@id='paginador']/nav/ul/li[{cont_pagina}]/a")
+                        boton_paginador.click()
+                        codigos = self.driver.find_elements(By.CLASS_NAME, "title-dark")
+                        for c in codigos:
+                            titulos2.append(c.text.strip()) 
+                        nombre2 = titulos2[cont]  
+                        print(f"Procesando el producto {cont+1}: {nombre2}")
+                    except NoSuchElementException:
+                        print("No se encontró el botón de paginación o se llegó al final.")
+                        break
+            except NoSuchElementException as e:
+                print(f"Error al procesar el producto: {e}")
+                break
             except Exception as e:
-                print(f"Ocurrió un error al procesar el código: {e}")
-                self.driver.back()  
-      
-                
-            
-            
+                print(f"Ocurrió un error: {e}")
+                self.driver.back()
 
-                    
-        # Mostrar todos los códigos extraídos
-        for idx, codigo in enumerate(todos_los_codigos, 1):
-            print(f"CÓDIGO {idx}: {codigo}")
-        return todos_los_codigos
-                
-              
 
 def main():
     
