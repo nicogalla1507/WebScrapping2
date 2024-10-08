@@ -1,10 +1,9 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 import time
 from selenium.common.exceptions import NoSuchElementException
+import pandas as pd
 
 
 class WebDriverManager:
@@ -46,59 +45,62 @@ class Catalogo:
         print("Categoría seleccionada:", select_categoria.first_selected_option.text)
 
     def fetch_modelos_marca(self):
-        try:
-            sel_marcas = self.driver.find_element(By.ID, "marca-filtros")
-            seleccionar_marca = Select(sel_marcas)
+        especificaciones_totales = []
+        marcas = self.driver.find_elements(By.XPATH, "//select[@id='marca-filtros']/option")
+        try: 
+            for contador_marca in range(1, len(marcas) + 1):
+        
+                marca_xpath = f"(//select[@id='marca-filtros']/option)[{contador_marca}]"
+                marca = self.driver.find_element(By.XPATH, marca_xpath)
+                valor_marca = marca.get_attribute('value')
+                texto_marca = marca.text.strip()
 
-            for marca in seleccionar_marca.options:
-                print(f"Seleccionando Marca: {marca.text}")
-                seleccionar_marca.select_by_visible_text(marca.text)
-                time.sleep(2)  
+                if valor_marca:
+                    print(f"Contador: {contador_marca}, Marca: {texto_marca}, Valor: {valor_marca}")
+                    marca.click()  
+                    time.sleep(1)  
 
-                sel_modelos = self.driver.find_element(By.ID, "modelo-filtros")
-                seleccionar_modelo = Select(sel_modelos)
+                    
+                    modelos = self.driver.find_elements(By.XPATH, "//select[@id='modelo-filtros']/option")
+                    
+                    for contador_modelo in range(1, len(modelos) + 1):
+                        
+                        modelo_xpath = f"(//select[@id='modelo-filtros']/option)[{contador_modelo}]"
+                        modelo = self.driver.find_element(By.XPATH, modelo_xpath)
+                        valor_modelo = modelo.get_attribute('value')
+                        texto_modelo = modelo.text.strip()
 
-                for modelo in seleccionar_modelo.options:
-                    print(f"Modelo para {marca.text}: {modelo.text}")
+                        if valor_modelo:
+                            print(f"Seleccionando Modelo: {texto_modelo}, Valor: {valor_modelo}")
+                            
+                            
+                            modelo.click()
+                            time.sleep(1)  
 
-                    if seleccionar_modelo.options:
-                       for _ in range(3): 
-                            try:
+                            
+                            buscar_button = self.driver.find_element(By.ID, "buscarTipo-filtros")
+                            buscar_button.click()
 
-                                boton = self.driver.find_element(By.ID, "buscarTipo-filtros")
-                                if boton.is_displayed() and boton.is_enabled():
-                                    boton.click()
-                                    print(f"Botón de buscar clicado para {marca.text} - {modelo.text}")
-
-                                    
-                                    time.sleep(5)  
-
-                                    
-                                    specs = self.driver.find_elements(By.CLASS_NAME, "js-intercambiable-th")
-                                    if specs:
-                                        print(f"Especificaciones cargadas para {marca.text} - {modelo.text}:")
-                                        for spec in specs:
-                                            print(spec.text)
-                                    else:
-                                        print("No se encontraron especificaciones.")
-                                for spec in specs:
-                                    print(spec.text)
-
-                                break  
-                            except Exception as e:
-                                print("error",type(e))
-                    specs_motor = self.driver.find_elements(By.LINK_TEXT, "Motor")
-                    specs_anio = self.driver.find_elements(By.LINK_TEXT, "Año")
-                    specs_aire = self.driver.find_elements(By.LINK_TEXT, "Aire")
-                    specs_aceite = self.driver.find_elements(By.LINK_TEXT, "Aceite")
-                    specs_combustible = self.driver.find_elements(By.LINK_TEXT,"Combustible")
-                    specs_hab = self.driver.find_elements(By.LINK_TEXT,"Habitáculo")
-                    print("SE ENCONTROOO")
-                    print(f"Especificaciones cargadas para {marca.text} - {modelo.text}:")
+                        
+                            time.sleep(2)
+                            specs = self.driver.find_elements(By.TAG_NAME, "td")
+                            self.driver.back()
+        
+                            time.sleep(1)  
+                            
+        except NoSuchElementException as e:
+            print("ERROR =>",e)
+                # Crear un DataFrame después de procesar todos los modelos de la marca
+            
 
 
-        except Exception as e:
-            print(f"Ocurrió un error: {str(e)}")
+                    
+                
+                    
+                
+            
+            
+            
 class CatalogoPiezas:
     def __init__(self, driver):
         self.driver = driver
@@ -112,14 +114,13 @@ class CatalogoPiezas:
         codigos = self.driver.find_elements(By.CLASS_NAME, "title-dark")
         titulos = [c.text.strip() for c in codigos]  # Recoge los títulos
         print(titulos)
-
+        
         cont = 0
         cont_pagina = 1
         nombre2 = ""  # Inicializa nombre2 para evitar el error
 
         while cont < 10:
             try:
-
                 if cont_pagina == 1:
                     nombre = titulos[cont]
                 else:
@@ -134,8 +135,7 @@ class CatalogoPiezas:
 
                 ver_mas_button.click()
                 
-                enlace_imagen = self.driver.find_element(By.TAG_NAME,"img")
-                
+                enlace_imagen = self.driver.find_element(By.XPATH,"/html/body/section[1]/div[3]/div/div[4]/img")
                 src = enlace_imagen.get_attribute('src')
 
                 
@@ -156,19 +156,25 @@ class CatalogoPiezas:
 
                         boton3 = self.driver.find_element(By.ID, "vermas-eq")
                         boton3.click()
-
-                        dimensiones = self.driver.find_elements(By.CLASS_NAME, "tabla-sub-head")
-                        lista_dimensiones = [d.text.strip() for d in dimensiones]
-                        print(lista_dimensiones)
+                        
+                        lista_dimensiones = []
+                        for i in range(1,11):
+                            dimensiones = self.driver.find_element(By.XPATH, f"//*[@id='dimensiones']/div/table/tbody/tr[2]/td[{i}]").text
+                            lista_dimensiones.append(dimensiones)
                     except NoSuchElementException:
                         print("No se encontró el botón para expandir más detalles.")
                 
 
                 self.driver.back()
+
+                #//*[@id="dimensiones"]/div/table/tbody/tr[2]/td[1]
+                
                 todos_los_codigos.append({
-                    'aplicacion': aplicacion,
-                    'especificaciones': specs,
-                    'URL':src
+                    'CODIGO': nombre,
+                    'APLICACION': aplicacion,
+                    'ESPECIFICACIONES': specs,
+                    'DIMENSIONES': lista_dimensiones,
+                    'URL IMAGEN': src
                 })
                 cont += 1
 
@@ -194,7 +200,10 @@ class CatalogoPiezas:
             except Exception as e:
                 print(f"Ocurrió un error: {e}")
                 self.driver.back()
-
+        df = pd.DataFrame(todos_los_codigos,columns=["CODIGO","APLICACION","ESPECIFICACIONES","DIMENSIONES","URL IMAGEN"])
+        df.to_excel('Datos.xlsx',index=False)
+        print("DATOS EXPORTADOS")
+        
 
 def main():
     
