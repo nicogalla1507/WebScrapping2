@@ -4,8 +4,7 @@ from selenium.webdriver.support.ui import Select
 import time
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
 import pandas as pd
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+
 
 class WebDriverManager:
     def __init__(self, url):
@@ -48,9 +47,9 @@ class Catalogo:
 
 
     def fetch_modelos_marca(self):
+        columnas_especificaciones = ['Modelo', 'Motor', 'Año', 'Aire', 'Aceite', 'Combustible', 'Habitáculo']
         especificaciones_totales = []
         marcas = self.driver.find_elements(By.XPATH, "//select[@id='marca-filtros']/option")
-
         try:
             for contador_marca in range(1, len(marcas) + 1):
                 marca_xpath = f"(//select[@id='marca-filtros']/option)[{contador_marca}]"
@@ -61,81 +60,75 @@ class Catalogo:
                 if valor_marca:
                     print(f"Contador: {contador_marca}, Marca: {texto_marca}, Valor: {valor_marca}")
 
-                    # Intentar hacer clic en la marca
+                    
                     try:
                         marca.click()
                     except Exception as e:
                         print(f"Error al hacer clic en la marca: {e}")
-                        continue  # Pasar a la siguiente marca si no se puede hacer clic
-
-                    # Esperar un momento para que se carguen los modelos
+                        continue  
+                   
                     time.sleep(2)
 
                     modelos = self.driver.find_elements(By.XPATH, "//select[@id='modelo-filtros']/option")
 
                     for contador_modelo in range(1, len(modelos) + 1):
-                        try:
-                            modelo_xpath = f"(//select[@id='modelo-filtros']/option)[{contador_modelo}]"
-                            modelo = self.driver.find_element(By.XPATH, modelo_xpath)
-                            valor_modelo = modelo.get_attribute('value')
-                            texto_modelo = modelo.text.strip()
+                    
+                        modelo_xpath = f"(//select[@id='modelo-filtros']/option)[{contador_modelo}]"
+                        modelo = self.driver.find_element(By.XPATH, modelo_xpath)
+                        valor_modelo = modelo.get_attribute('value')
+                        texto_modelo = modelo.text.strip()
 
-                            if valor_modelo:
-                                print(f"Seleccionando Modelo: {texto_modelo}, Valor: {valor_modelo}")
-                                modelo.click()
+                        if valor_modelo:
+                            print(f"Seleccionando Modelo: {texto_modelo}, Valor: {valor_modelo}")
+                            modelo.click()
 
-                                # Esperar un momento para que el botón de buscar esté disponible
-                                time.sleep(2)
-                                buscar_button = self.driver.find_element(By.ID, "buscarTipo-filtros")
-                                buscar_button.click()
+                            
+                
+                            buscar_button = self.driver.find_element(By.ID, "buscarTipo-filtros")
+                            buscar_button.click()
 
-                                # Esperar que las especificaciones se carguen
-                                time.sleep(2)
-                                specs = self.driver.find_elements(By.TAG_NAME, "td")
-
-                                # Aquí podrías agregar lógica para procesar las especificaciones
-                                for spec in specs:
-                                    especificaciones_totales.append(spec.text.strip())
-
-                              
-                                
-
-                              
-                                modelos = self.driver.find_elements(By.XPATH, "//select[@id='modelo-filtros']/option")
-
-                        except StaleElementReferenceException:
-                            print(f"El modelo {contador_modelo} ya no es válido, intentando nuevamente.")
-                            # Reintentar buscando nuevamente los modelos
+                            
+                            
+                            specs = self.driver.find_elements(By.TAG_NAME, "td")
+                            
                             modelos = self.driver.find_elements(By.XPATH, "//select[@id='modelo-filtros']/option")
-                            modelo_xpath = f"(//select[@id='modelo-filtros']/option)[{contador_modelo}]"
-                            modelo = self.driver.find_element(By.XPATH, modelo_xpath)
-                            valor_modelo = modelo.get_attribute('value')
-                            texto_modelo = modelo.text.strip()
+                            especificaciones_modelo = {
+                                "Marca": texto_marca,
+                                "Modelo": texto_modelo,
+                                "Motor": '',          
+                                "Año": '',            
+                                "Aire": '',           
+                                "Aceite": '',         
+                                "Combustible": '',    
+                                "Habitáculo": ''      
+                            }
+                            for campo in ['Motor', 'Año', 'Aire', 'Aceite', 'Combustible', 'Habitáculo']:
+                                try:
+                                    td_element = self.driver.find_element(By.XPATH, f"//td[@data-title='{campo}']")
+                                    especificaciones_modelo[campo] = td_element.text.strip()
+                                    
+                                    if td_element:
+                                except NoSuchElementException:
+                                    especificaciones_modelo[campo] = 'No disponible'
 
-                            if valor_modelo:
-                                print(f"Seleccionando Modelo: {texto_modelo}, Valor: {valor_modelo}")
-                                modelo.click()
+                                especificaciones_totales.append(especificaciones_modelo)
+                                print(f"Especificaciones agregadas: {especificaciones_modelo}")
+                                    
+                                especificaciones_totales.append(especificaciones_modelo)
+                                print(f"Especificaciones agregadas: {especificaciones_modelo}")
+                    df_modelo = pd.DataFrame(especificaciones_totales)
 
-                                # Esperar un momento para que el botón de buscar esté disponible
-                                time.sleep(2)
-                                buscar_button = self.driver.find_element(By.ID, "buscarTipo-filtros")
-                                buscar_button.click()
-
-                                # Esperar que las especificaciones se carguen
-                                time.sleep(2)
-                                specs = self.driver.find_elements(By.TAG_NAME, "td")
-
-                                # Aquí podrías agregar lógica para procesar las especificaciones
-                                for spec in specs:
-                                    especificaciones_totales.append(spec.text.strip())
+                    
+                    nombre_archivo = f"Final.xlsx"
+                    df_modelo.to_excel(nombre_archivo, index=False)
+                    print(f"Guardado: {nombre_archivo}")
+                            
+                    
 
         except NoSuchElementException as e:
             print("ERROR =>", e)
 
-        # Crear un DataFrame después de procesar todos los modelos de la marca
-        # Por ejemplo, usando pandas:
-        # df = pd.DataFrame(especificaciones_totales)
-
+        
 
                         
                     
@@ -158,7 +151,7 @@ class CatalogoPiezas:
         
         cont = 0
         cont_pagina = 1
-        nombre2 = ""  # Inicializa nombre2 para evitar el error
+        nombre2 = ""  
 
         while cont < 10:
             try:
@@ -266,9 +259,14 @@ def main():
             time.sleep(2)  
             
             catalogo = Catalogo(web_driver_manager.driver)
-            catalogo.select_categoria("1")
+            autos = catalogo.select_categoria("1")
             catalogo.fetch_modelos_marca()
-        
+            if autos:
+                camiones = catalogo.select_categoria("3")
+                catalogo.fetch_modelos_marca()
+                if camiones:
+                    motos = catalogo.select_categoria("4")
+                    catalogo.fetch_modelos_marca()
         elif opcion == "piezas":
             url_piezas = "https://wega.com.ar/es/fichas_filtros_habitaculos"
             piezas = CatalogoPiezas(web_driver_manager.driver)
