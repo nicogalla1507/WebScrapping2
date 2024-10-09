@@ -2,7 +2,9 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 import time
-from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 import pandas as pd
 
 
@@ -147,7 +149,112 @@ class Catalogo:
 
         except NoSuchElementException as e:
             print("ERROR =>", e)
-            
+    def aplicaciones(self):
+        marcas = self.driver.find_elements(By.XPATH, "//select[@id='marca-filtros']/option")
+        aplicaciones_totales = []  # Inicializa la lista de aplicaciones totales
+
+        try:
+            for contador_marca in range(1, len(marcas) + 1):
+                marca_xpath = f"(//select[@id='marca-filtros']/option)[{contador_marca}]"
+                marca = self.driver.find_element(By.XPATH, marca_xpath)
+                valor_marca = marca.get_attribute('value')
+                texto_marca = marca.text.strip()
+
+                if valor_marca:
+                    print(f"Contador: {contador_marca}, Marca: {texto_marca}, Valor: {valor_marca}")
+
+                    try:
+                        marca.click()
+                    except Exception as e:
+                        print(f"Error al hacer clic en la marca: {e}")
+                        continue  
+
+                    time.sleep(2)
+
+                    modelos = self.driver.find_elements(By.XPATH, "//select[@id='modelo-filtros']/option")
+
+                    for contador_modelo in range(1, len(modelos) + 1):
+                        modelo_xpath = f"(//select[@id='modelo-filtros']/option)[{contador_modelo}]"
+                        modelo = self.driver.find_element(By.XPATH, modelo_xpath)
+                        valor_modelo = modelo.get_attribute('value')
+                        texto_modelo = modelo.text.strip()
+
+                        if valor_modelo:
+                            print(f"Seleccionando Modelo: {texto_modelo}, Valor: {valor_modelo}")
+                            modelo.click()
+
+                            buscar_button = self.driver.find_element(By.ID, "buscarTipo-filtros")
+                            buscar_button.click()
+
+                            campos = ['Aire', 'Aceite', 'Combustible', 'Habitáculo']
+                            contador_campo = 0
+
+                            while contador_campo < len(campos):
+                                campo = campos[contador_campo]
+                                try:
+                                    td_element = self.driver.find_element(By.XPATH, f"//td[@data-title='{campo}']")
+                                    
+                                    # Obtener todos los img-wrapper
+                                    img_wrappers = td_element.find_elements(By.CLASS_NAME, 'img-wrapper')
+                                    aplicaciones_totales_pagina = []  # Inicializa la lista de aplicaciones de esta página
+
+                                    # Iterar sobre todos los img_wrappers
+                                    for img_wrapper in img_wrappers:
+                                        try:
+                                            link_img_wrapper = img_wrapper.find_element(By.TAG_NAME, 'a')
+                                            link_img_wrapper.click()
+
+                                            time.sleep(2)  
+
+                                            # Obtener aplicaciones en la página
+                                            aplicaciones = self.driver.find_elements(By.TAG_NAME, 'br')
+                                            aplicaciones_texto = [aplicacion.text.strip() for aplicacion in aplicaciones]
+
+                                            aplicaciones_totales_pagina.append({
+                                                "Campo": campo,
+                                                "Aplicaciones": aplicaciones_texto
+                                            })
+
+                                            self.driver.back()
+                                            time.sleep(2)
+
+                                            # Re-localizar img_wrappers después de volver a la página anterior
+                                            break
+
+                                        except NoSuchElementException:
+                                            print(f"No se encontró el enlace en img-wrapper para {campo}")
+
+                                    # Agregar aplicaciones de esta página a la lista total
+                                    aplicaciones_totales.extend(aplicaciones_totales_pagina)
+
+                                    # Intentar navegar a la siguiente página
+                                    try:
+                                        siguiente_pagina = WebDriverWait(self.driver, 10).until(
+                                            EC.visibility_of_element_located((By.XPATH, "//a[contains(text(), 'Siguiente')]"))
+                                        )
+                                        siguiente_pagina.click()
+                                        time.sleep(2)  # Esperar a que la nueva página se cargue
+
+                                    except TimeoutException:
+                                        print("No se encontró el botón de 'Siguiente' o no está visible, terminando la búsqueda.")
+                                        break  # Salir del bucle si no hay más páginas
+
+                                except NoSuchElementException:
+                                    print(f"No se encontró el campo: {campo}")
+                                    aplicaciones_totales.append({
+                                        "Campo": campo,
+                                        "Aplicaciones": 'No disponible'
+                                    })
+
+                                # Incrementar el contador de campos
+                                contador_campo += 1
+
+        except NoSuchElementException as e:
+            print("ERROR", e)
+
+        # Al final, puedes guardar o procesar aplicaciones_totales como desees
+        print("Aplicaciones totales encontradas:", aplicaciones_totales)
+
             
             
 class CatalogoPiezas:
@@ -274,7 +381,9 @@ def main():
             time.sleep(2)  
             
             catalogo = Catalogo(web_driver_manager.driver)
+            
             autos = catalogo.select_categoria("1")
+            catalogo.aplicaciones()
             catalogo.fetch_modelos_marca()
             if autos:
                 camiones = catalogo.select_categoria("3")
