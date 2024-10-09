@@ -47,7 +47,7 @@ class Catalogo:
 
 
     def fetch_modelos_marca(self):
-        columnas_especificaciones = ['Modelo', 'Motor', 'Año', 'Aire', 'Aceite', 'Combustible', 'Habitáculo']
+        
         especificaciones_totales = []
         marcas = self.driver.find_elements(By.XPATH, "//select[@id='marca-filtros']/option")
         try:
@@ -86,7 +86,27 @@ class Catalogo:
                 
                             buscar_button = self.driver.find_element(By.ID, "buscarTipo-filtros")
                             buscar_button.click()
+                            btn= self.driver.find_elements(By.CLASS_NAME,"img-wrapper")
+                            for b in btn:
+                                try:
+                                    # Obtener el atributo href del botón/enlace
+                                    href = b.get_attribute('href')
+                                    print(f"Enlace encontrado: {href}")
 
+                                    # Hacer clic en el enlace
+                                    b.click()
+                                    time.sleep(2)  # Pausa para cargar la página o hacer alguna acción necesaria
+
+                                    # Aquí puedes agregar la lógica para buscar aplicaciones u otros elementos dentro de la nueva página
+                                    # Por ejemplo:
+                                    aplicaciones = self.driver.find_elements(By.TAG_NAME, 'br')
+                                    for aplicacion in aplicaciones:
+                                        print(aplicacion.text)
+
+                                    # Volver a la página original (si es necesario)
+                                    self.driver.back() 
+                                except NoSuchElementException:
+                                    print("ERROR")
                             
                             
                             specs = self.driver.find_elements(By.TAG_NAME, "td")
@@ -106,8 +126,6 @@ class Catalogo:
                                 try:
                                     td_element = self.driver.find_element(By.XPATH, f"//td[@data-title='{campo}']")
                                     especificaciones_modelo[campo] = td_element.text.strip()
-                                    
-                                    if td_element:
                                 except NoSuchElementException:
                                     especificaciones_modelo[campo] = 'No disponible'
 
@@ -116,22 +134,19 @@ class Catalogo:
                                     
                                 especificaciones_totales.append(especificaciones_modelo)
                                 print(f"Especificaciones agregadas: {especificaciones_modelo}")
+                        
                     df_modelo = pd.DataFrame(especificaciones_totales)
 
                     
-                    nombre_archivo = f"Final.xlsx"
-                    df_modelo.to_excel(nombre_archivo, index=False)
+                    nombre_archivo = f"Autos.xlsx"
+                    excel = df_modelo.to_excel(nombre_archivo, index=False)
                     print(f"Guardado: {nombre_archivo}")
-                            
+                    
+                             
                     
 
         except NoSuchElementException as e:
             print("ERROR =>", e)
-
-        
-
-                        
-                    
             
             
             
