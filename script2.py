@@ -188,66 +188,50 @@ class Catalogo:
 
                             campos = ['Aire', 'Aceite', 'Combustible', 'Habitáculo']
                             contador_campo = 0
+                            img_wrappers = self.driver.find_elements(By.CLASS_NAME,"img-wrapper")
+                            while True:
+                            # Obtener todos los img-wrapper de la página actual
+                                img_wrappers = self.driver.find_elements(By.CLASS_NAME, "img-wrapper")
+                                
+                                if not img_wrappers:
+                                    print("No hay más img-wrapper en la página.")
+                                    break
 
-                            while contador_campo < len(campos):
-                                campo = campos[contador_campo]
-                                try:
-                                    td_element = self.driver.find_element(By.XPATH, f"//td[@data-title='{campo}']")
-                                    
-                                    # Obtener todos los img-wrapper
-                                    img_wrappers = td_element.find_elements(By.CLASS_NAME, 'img-wrapper')
-                                    aplicaciones_totales_pagina = []  # Inicializa la lista de aplicaciones de esta página
-
-                                    # Iterar sobre todos los img_wrappers
-                                    for img_wrapper in img_wrappers:
-                                        try:
-                                            link_img_wrapper = img_wrapper.find_element(By.TAG_NAME, 'a')
-                                            link_img_wrapper.click()
-
-                                            time.sleep(2)  
-
-                                            # Obtener aplicaciones en la página
-                                            aplicaciones = self.driver.find_elements(By.TAG_NAME, 'br')
-                                            aplicaciones_texto = [aplicacion.text.strip() for aplicacion in aplicaciones]
-
-                                            aplicaciones_totales_pagina.append({
-                                                "Campo": campo,
-                                                "Aplicaciones": aplicaciones_texto
-                                            })
-
-                                            self.driver.back()
-                                            time.sleep(2)
-
-                                            # Re-localizar img_wrappers después de volver a la página anterior
-                                            break
-
-                                        except NoSuchElementException:
-                                            print(f"No se encontró el enlace en img-wrapper para {campo}")
-
-                                    # Agregar aplicaciones de esta página a la lista total
-                                    aplicaciones_totales.extend(aplicaciones_totales_pagina)
-
-                                    # Intentar navegar a la siguiente página
+                                for i, img_wrapper in enumerate(img_wrappers):
                                     try:
-                                        siguiente_pagina = WebDriverWait(self.driver, 10).until(
-                                            EC.visibility_of_element_located((By.XPATH, "//a[contains(text(), 'Siguiente')]"))
-                                        )
-                                        siguiente_pagina.click()
-                                        time.sleep(2)  # Esperar a que la nueva página se cargue
+                                        # Re-localizar el img-wrapper antes de cada clic para evitar problemas con DOM recargado
+                                        img_wrappers = self.driver.find_elements(By.CLASS_NAME, "img-wrapper")
+                                        img_wrapper = img_wrappers[i]
+                                        link_img_wrapper = img_wrapper.find_element(By.TAG_NAME, 'a')
+                                        link_img_wrapper.click()
 
-                                    except TimeoutException:
-                                        print("No se encontró el botón de 'Siguiente' o no está visible, terminando la búsqueda.")
-                                        break  # Salir del bucle si no hay más páginas
+                                        time.sleep(2)
 
-                                except NoSuchElementException:
-                                    print(f"No se encontró el campo: {campo}")
-                                    aplicaciones_totales.append({
-                                        "Campo": campo,
-                                        "Aplicaciones": 'No disponible'
-                                    })
+                                        # Obtener aplicaciones en la página
+                                        aplicaciones = self.driver.find_elements(By.TAG_NAME, 'br')
+                                        aplicaciones_texto = [aplicacion.text.strip() for aplicacion in aplicaciones]
 
-                                # Incrementar el contador de campos
-                                contador_campo += 1
+                                        aplicaciones_totales.append({
+                                            "Aplicaciones": aplicaciones_texto
+                                        })
+
+                                        self.driver.back()
+                                        time.sleep(2)
+
+                                    except NoSuchElementException:
+                                        print(f"No se encontró el enlace en img-wrapper para la iteración {i}.")
+
+                                # Intentar navegar a la siguiente página
+                                try:
+                                    siguiente_pagina = WebDriverWait(self.driver, 10).until(
+                                        EC.visibility_of_element_located((By.XPATH, "//a[contains(text(), 'Siguiente')]"))
+                                    )
+                                    siguiente_pagina.click()
+                                    time.sleep(2)  # Esperar a que la nueva página se cargue
+
+                                except TimeoutException:
+                                    print("No se encontró el botón de 'Siguiente' o no está visible, terminando la búsqueda.")
+                                    break  # Salir del bucle si no hay más páginas
 
         except NoSuchElementException as e:
             print("ERROR", e)
