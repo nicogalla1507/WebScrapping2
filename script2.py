@@ -7,7 +7,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 import pandas as pd
 
-
 class WebDriverManager:
     def __init__(self, url):
         options = webdriver.ChromeOptions() 
@@ -88,61 +87,56 @@ class Catalogo:
                 
                             buscar_button = self.driver.find_element(By.ID, "buscarTipo-filtros")
                             buscar_button.click()
-                            btn= self.driver.find_elements(By.CLASS_NAME,"img-wrapper")
-                            for b in btn:
-                                try:
-                                    # Obtener el atributo href del botón/enlace
-                                    href = b.get_attribute('href')
-                                    print(f"Enlace encontrado: {href}")
-
-                                    # Hacer clic en el enlace
-                                    b.click()
-                                    time.sleep(2)  # Pausa para cargar la página o hacer alguna acción necesaria
-
-                                    # Aquí puedes agregar la lógica para buscar aplicaciones u otros elementos dentro de la nueva página
-                                    # Por ejemplo:
-                                    aplicaciones = self.driver.find_elements(By.TAG_NAME, 'br')
-                                    for aplicacion in aplicaciones:
-                                        print(aplicacion.text)
-
-                                    # Volver a la página original (si es necesario)
-                                    self.driver.back() 
-                                except NoSuchElementException:
-                                    print("ERROR")
-                            
-                            
-                            specs = self.driver.find_elements(By.TAG_NAME, "td")
                             
                             modelos = self.driver.find_elements(By.XPATH, "//select[@id='modelo-filtros']/option")
-                            especificaciones_modelo = {
-                                "Marca": texto_marca,
-                                "Modelo": texto_modelo,
-                                "Motor": '',          
-                                "Año": '',            
-                                "Aire": '',           
-                                "Aceite": '',         
-                                "Combustible": '',    
-                                "Habitáculo": ''      
-                            }
-                            for campo in ['Motor', 'Año', 'Aire', 'Aceite', 'Combustible', 'Habitáculo']:
+                            filas = self.driver.find_elements(By.XPATH, "//table/tbody/tr")
+
+                            for fila in filas:
+                                especificaciones_modelo = {
+                                    'Modelo': '',
+                                    'Motor': '',
+                                    'Año': '',
+                                    'Aire': '',
+                                    'Aceite': '',
+                                    'Combustible': '',
+                                    'Habitáculo': ''
+                                }
+                                
                                 try:
-                                    td_element = self.driver.find_element(By.XPATH, f"//td[@data-title='{campo}']")
-                                    especificaciones_modelo[campo] = td_element.text.strip()
-                                except NoSuchElementException:
-                                    especificaciones_modelo[campo] = 'No disponible'
+                                    columnas = fila.find_elements(By.TAG_NAME, "td")
+                                    if columnas:
+                                        especificaciones_modelo['Modelo'] = columnas[0].text.strip()
+                                        especificaciones_modelo['Motor'] = columnas[1].text.strip()
+                                        especificaciones_modelo['Año'] = columnas[2].text.strip()
+
+                                        # Para las columnas Aire, Aceite, Combustible y Habitáculo
+                                        for i, campo in enumerate(['Aire', 'Aceite', 'Combustible', 'Habitáculo']):
+                                            campo_elementos = columnas[3 + i].find_elements(By.TAG_NAME, 'a')
+                                            if campo_elementos:
+                                                codigos = [element.text.strip() for element in campo_elementos]
+                                                # Unir los códigos con saltos de línea
+                                                especificaciones_modelo[campo] = '\n'.join(codigos)
+                                            else:
+                                                especificaciones_modelo[campo] = columnas[3 + i].text.strip()
+
+                                except NoSuchElementException as e:
+                                    print(f"ERROR al extraer datos de la fila: {e}")
 
                                 especificaciones_totales.append(especificaciones_modelo)
-                                print(f"Especificaciones agregadas: {especificaciones_modelo}")
-                                    
-                                especificaciones_totales.append(especificaciones_modelo)
-                                print(f"Especificaciones agregadas: {especificaciones_modelo}")
+
+
+                            df_modelo = pd.DataFrame(especificaciones_totales)
+
+
+                            nombre_archivo = "Autos.xlsx"
+                            df_modelo.to_excel(nombre_archivo, index=False)
+                            print(f"Guardado: {nombre_archivo}")
+
+                            especificaciones_totales.append(especificaciones_modelo.copy())
+                            print(f"Especificaciones agregadas: {especificaciones_modelo}")
+
                         
-                    df_modelo = pd.DataFrame(especificaciones_totales)
-
-                    
-                    nombre_archivo = f"Autos.xlsx"
-                    excel = df_modelo.to_excel(nombre_archivo, index=False)
-                    print(f"Guardado: {nombre_archivo}")
+                
                     
                              
                     
@@ -186,11 +180,10 @@ class Catalogo:
                             buscar_button = self.driver.find_element(By.ID, "buscarTipo-filtros")
                             buscar_button.click()
 
-                            campos = ['Aire', 'Aceite', 'Combustible', 'Habitáculo']
-                            contador_campo = 0
+                            
                             img_wrappers = self.driver.find_elements(By.CLASS_NAME,"img-wrapper")
                             while True:
-                            # Obtener todos los img-wrapper de la página actual
+                            
                                 img_wrappers = self.driver.find_elements(By.CLASS_NAME, "img-wrapper")
                                 
                                 if not img_wrappers:
@@ -199,15 +192,15 @@ class Catalogo:
 
                                 for i, img_wrapper in enumerate(img_wrappers):
                                     try:
-                                        # Re-localizar el img-wrapper antes de cada clic para evitar problemas con DOM recargado
+                                        
                                         img_wrappers = self.driver.find_elements(By.CLASS_NAME, "img-wrapper")
                                         img_wrapper = img_wrappers[i]
                                         link_img_wrapper = img_wrapper.find_element(By.TAG_NAME, 'a')
                                         link_img_wrapper.click()
 
-                                        time.sleep(2)
+                                        
 
-                                        # Obtener aplicaciones en la página
+                                        
                                         aplicaciones = self.driver.find_elements(By.TAG_NAME, 'br')
                                         aplicaciones_texto = [aplicacion.text.strip() for aplicacion in aplicaciones]
 
@@ -362,13 +355,14 @@ def main():
         elif opcion == "catalogo":
             url_catalogo = "https://wega.com.ar/es/catalogos/seccion/filtros"
             web_driver_manager.driver.get(url_catalogo)
-            time.sleep(2)  
+ 
             
             catalogo = Catalogo(web_driver_manager.driver)
-            
             autos = catalogo.select_categoria("1")
-            catalogo.aplicaciones()
+            
             catalogo.fetch_modelos_marca()
+            
+            
             if autos:
                 camiones = catalogo.select_categoria("3")
                 catalogo.fetch_modelos_marca()
