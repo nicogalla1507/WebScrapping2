@@ -144,9 +144,8 @@ class Catalogo:
         except NoSuchElementException as e:
             print("ERROR =>", e)
     def aplicaciones(self):
+        especificaciones_totales = []
         marcas = self.driver.find_elements(By.XPATH, "//select[@id='marca-filtros']/option")
-        aplicaciones_totales = []  # Inicializa la lista de aplicaciones totales
-
         try:
             for contador_marca in range(1, len(marcas) + 1):
                 marca_xpath = f"(//select[@id='marca-filtros']/option)[{contador_marca}]"
@@ -157,22 +156,23 @@ class Catalogo:
                 if valor_marca:
                     print(f"Contador: {contador_marca}, Marca: {texto_marca}, Valor: {valor_marca}")
 
+                    
                     try:
                         marca.click()
                     except Exception as e:
                         print(f"Error al hacer clic en la marca: {e}")
                         continue  
-
+                   
                     time.sleep(2)
 
                     modelos = self.driver.find_elements(By.XPATH, "//select[@id='modelo-filtros']/option")
 
                     for contador_modelo in range(1, len(modelos) + 1):
+                    
                         modelo_xpath = f"(//select[@id='modelo-filtros']/option)[{contador_modelo}]"
                         modelo = self.driver.find_element(By.XPATH, modelo_xpath)
                         valor_modelo = modelo.get_attribute('value')
                         texto_modelo = modelo.text.strip()
-
                         if valor_modelo:
                             print(f"Seleccionando Modelo: {texto_modelo}, Valor: {valor_modelo}")
                             modelo.click()
@@ -180,58 +180,78 @@ class Catalogo:
                             buscar_button = self.driver.find_element(By.ID, "buscarTipo-filtros")
                             buscar_button.click()
 
-                            
-                            img_wrappers = self.driver.find_elements(By.CLASS_NAME,"img-wrapper")
-                            while True:
-                            
-                                img_wrappers = self.driver.find_elements(By.CLASS_NAME, "img-wrapper")
-                                
-                                if not img_wrappers:
-                                    print("No hay más img-wrapper en la página.")
-                                    break
+                            img_wrappers = self.driver.find_elements(By.CLASS_NAME, "img-wrapper")
+                            if not img_wrappers:
+                                print("No hay más img-wrapper en la página.")
+                                break
 
-                                for i, img_wrapper in enumerate(img_wrappers):
-                                    try:
-                                        
-                                        img_wrappers = self.driver.find_elements(By.CLASS_NAME, "img-wrapper")
-                                        img_wrapper = img_wrappers[i]
-                                        link_img_wrapper = img_wrapper.find_element(By.TAG_NAME, 'a')
-                                        link_img_wrapper.click()
-
-                                        
-
-                                        
-                                        aplicaciones = self.driver.find_elements(By.TAG_NAME, 'br')
+                            for i, img_wrapper in enumerate(img_wrappers):
+                                try:
+                                    img_wrappers = self.driver.find_elements(By.CLASS_NAME, "img-wrapper")
+                                    img_wrapper = img_wrappers[i]
+                                    link_img_wrapper = img_wrapper.find_element(By.TAG_NAME, 'a')
+                                    link_img_wrapper.click()
+                                    boton_vermas = self.driver.find_element(By.ID, "vermas2")
+                                    if boton_vermas:
+                                        boton_vermas.click()
+                                        aplicaciones = self.driver.find_elements(By.CLASS_NAME, "content-hidden expand")
                                         aplicaciones_texto = [aplicacion.text.strip() for aplicacion in aplicaciones]
+                                        equivalencias = self.driver.find_elements(By.CLASS_NAME, "block-table")
+                                        lista_eq = []
+                                        if equivalencias:
+                                            for equivalencia in equivalencias:
+                                                # Extraer el texto completo de las equivalencias
+                                                eq_texto = equivalencia.text.strip()
+                                                strong_elements = equivalencia.find_elements(By.TAG_NAME, 'strong')
+                                                if strong_elements:
+                                                    eq_texto_strong = ' '.join([strong.text.strip() for strong in strong_elements])
+                                                    eq_texto += f" {eq_texto_strong}"  # Añadir el texto de strong al texto general
+                                                lista_eq.append(eq_texto)
+                                                
+                                                filas_dimensiones = self.driver.find_elements(By.XPATH, "//*[@id='dimensiones']/div/table/tbody/tr")
+                                        
+                                        # Diccionario para asignar los valores a cada especificación
+                                        especificaciones = {
+                                            'LARGO': None, 'ANCHO': None, 'ALTO': None, 'Ø EXT.': None,
+                                            'Ø INT.': None, 'JUNTA': None, 'VÁLVULA': None, 'PICOS': None,
+                                            'TIPO': None, 'ROSCA': None, 'OBSERVACIONES': None
+                                        }
+                                        
+                                        for fila in filas_dimensiones:
+                                            celdas = fila.find_elements(By.TAG_NAME, 'td')
+                                            if len(celdas) == 11:  # Asegurarse de que la fila tenga 11 celdas
+                                                especificaciones['LARGO'] = celdas[0].text.strip()
+                                                especificaciones['ANCHO'] = celdas[1].text.strip()
+                                                especificaciones['ALTO'] = celdas[2].text.strip()
+                                                especificaciones['Ø EXT.'] = celdas[3].text.strip()
+                                                especificaciones['Ø INT.'] = celdas[4].text.strip()
+                                                especificaciones['JUNTA'] = celdas[5].text.strip()
+                                                especificaciones['VÁLVULA'] = celdas[6].text.strip()
+                                                especificaciones['PICOS'] = celdas[7].text.strip()
+                                                especificaciones['TIPO'] = celdas[8].text.strip()
+                                                especificaciones['ROSCA'] = celdas[9].text.strip()
+                                                especificaciones['OBSERVACIONES'] = celdas[10].text.strip()
 
-                                        aplicaciones_totales.append({
-                                            "Aplicaciones": aplicaciones_texto
+                                        # Guardar los datos extraídos
+                                        especificaciones_totales.append({
+                                            "Marca": texto_marca,
+                                            "Modelo": texto_modelo,
+                                            "Aplicaciones": aplicaciones_texto,
+                                            "Equivalencias": lista_eq,
+                                            **especificaciones  # Agregar las especificaciones al diccionario
                                         })
 
-                                        self.driver.back()
+                                        
                                         time.sleep(2)
-
-                                    except NoSuchElementException:
-                                        print(f"No se encontró el enlace en img-wrapper para la iteración {i}.")
-
-                                # Intentar navegar a la siguiente página
-                                try:
-                                    siguiente_pagina = WebDriverWait(self.driver, 10).until(
-                                        EC.visibility_of_element_located((By.XPATH, "//a[contains(text(), 'Siguiente')]"))
-                                    )
-                                    siguiente_pagina.click()
-                                    time.sleep(2)  # Esperar a que la nueva página se cargue
-
-                                except TimeoutException:
-                                    print("No se encontró el botón de 'Siguiente' o no está visible, terminando la búsqueda.")
-                                    break  # Salir del bucle si no hay más páginas
-
+                                        df = pd.DataFrame(especificaciones_totales)
+                                        df.to_excel('ESPECIFICACIONES.xlsx',index=False)
+                                        print("GUARDADO")
+                                        self.driver.back()
+                                except NoSuchElementException as e:
+                                    print("ERROR",e)
+                            
         except NoSuchElementException as e:
-            print("ERROR", e)
-
-        # Al final, puedes guardar o procesar aplicaciones_totales como desees
-        print("Aplicaciones totales encontradas:", aplicaciones_totales)
-
+            print("ERROR",e)
             
             
 class CatalogoPiezas:
@@ -358,8 +378,9 @@ def main():
  
             
             catalogo = Catalogo(web_driver_manager.driver)
-            autos = catalogo.select_categoria("1")
             
+            autos = catalogo.select_categoria("1")
+            catalogo.aplicaciones()
             catalogo.fetch_modelos_marca()
             
             
