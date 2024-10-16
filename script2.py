@@ -2,10 +2,11 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 import time
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.common.exceptions import NoSuchElementException
 import pandas as pd
+from openpyxl import load_workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.styles import Alignment
 
 class WebDriverManager:
     def __init__(self, url):
@@ -47,10 +48,13 @@ class Catalogo:
 
 
 
+
+
+
     def fetch_modelos_marca(self):
-        
         especificaciones_totales = []
         marcas = self.driver.find_elements(By.XPATH, "//select[@id='marca-filtros']/option")
+
         try:
             for contador_marca in range(1, len(marcas) + 1):
                 marca_xpath = f"(//select[@id='marca-filtros']/option)[{contador_marca}]"
@@ -60,20 +64,18 @@ class Catalogo:
 
                 if valor_marca:
                     print(f"Contador: {contador_marca}, Marca: {texto_marca}, Valor: {valor_marca}")
-
                     
                     try:
                         marca.click()
                     except Exception as e:
                         print(f"Error al hacer clic en la marca: {e}")
-                        continue  
-                   
+                        continue
+                    
                     time.sleep(2)
 
                     modelos = self.driver.find_elements(By.XPATH, "//select[@id='modelo-filtros']/option")
 
                     for contador_modelo in range(1, len(modelos) + 1):
-                    
                         modelo_xpath = f"(//select[@id='modelo-filtros']/option)[{contador_modelo}]"
                         modelo = self.driver.find_element(By.XPATH, modelo_xpath)
                         valor_modelo = modelo.get_attribute('value')
@@ -83,66 +85,60 @@ class Catalogo:
                             print(f"Seleccionando Modelo: {texto_modelo}, Valor: {valor_modelo}")
                             modelo.click()
 
-                            
-                
                             buscar_button = self.driver.find_element(By.ID, "buscarTipo-filtros")
                             buscar_button.click()
-                            
-                            modelos = self.driver.find_elements(By.XPATH, "//select[@id='modelo-filtros']/option")
+
+                            time.sleep(2) 
+
+                           
                             filas = self.driver.find_elements(By.XPATH, "//table/tbody/tr")
 
+                            
                             for fila in filas:
-                                especificaciones_modelo = {
-                                    'Modelo': '',
-                                    'Motor': '',
-                                    'Año': '',
-                                    'Aire': '',
-                                    'Aceite': '',
-                                    'Combustible': '',
-                                    'Habitáculo': ''
-                                }
-                                
-                                try:
-                                    columnas = fila.find_elements(By.TAG_NAME, "td")
-                                    if columnas:
-                                        especificaciones_modelo['Modelo'] = columnas[0].text.strip()
-                                        especificaciones_modelo['Motor'] = columnas[1].text.strip()
-                                        especificaciones_modelo['Año'] = columnas[2].text.strip()
+                                columnas = fila.find_elements(By.TAG_NAME, "td")
+                                if columnas:
+                                    
+                                    modelo = columnas[0].text.strip()
+                                    motor = columnas[1].text.strip()
+                                    ano = columnas[2].text.strip()
 
-                                        # Para las columnas Aire, Aceite, Combustible y Habitáculo
-                                        for i, campo in enumerate(['Aire', 'Aceite', 'Combustible', 'Habitáculo']):
-                                            campo_elementos = columnas[3 + i].find_elements(By.TAG_NAME, 'a')
-                                            if campo_elementos:
-                                                codigos = [element.text.strip() for element in campo_elementos]
-                                                # Unir los códigos con saltos de línea
-                                                especificaciones_modelo[campo] = '\n'.join(codigos)
-                                            else:
-                                                especificaciones_modelo[campo] = columnas[3 + i].text.strip()
+                                    
+                                    aire = columnas[3].text.strip() if len(columnas[3].find_elements(By.TAG_NAME, 'a')) == 0 else [element.text.strip() for element in columnas[3].find_elements(By.TAG_NAME, 'a')][0]
+                                    aceite = columnas[4].text.strip() if len(columnas[4].find_elements(By.TAG_NAME, 'a')) == 0 else [element.text.strip() for element in columnas[4].find_elements(By.TAG_NAME, 'a')][0]
+                                    combustible = columnas[5].text.strip() if len(columnas[5].find_elements(By.TAG_NAME, 'a')) == 0 else [element.text.strip() for element in columnas[5].find_elements(By.TAG_NAME, 'a')][0]
+                                    habitaculo = columnas[6].text.strip() if len(columnas[6].find_elements(By.TAG_NAME, 'a')) == 0 else [element.text.strip() for element in columnas[6].find_elements(By.TAG_NAME, 'a')][0]
 
-                                except NoSuchElementException as e:
-                                    print(f"ERROR al extraer datos de la fila: {e}")
+                                    especificaciones_fila = {
+                                        'Marca':texto_marca,
+                                        'Modelo': modelo,
+                                        'Motor': motor,
+                                        'Año': ano,
+                                        'Aire': aire,
+                                        'Aceite': aceite,
+                                        'Combustible': combustible,
+                                        'Habitáculo': habitaculo
+                                    }
+                                    especificaciones_totales.append(especificaciones_fila)
+                                    for especificacion in especificaciones_totales:
+                                        print(especificacion)
+            
+            print("Mostrando los datos extraídos:")
+            
 
-                                especificaciones_totales.append(especificaciones_modelo)
+            
+            df = pd.DataFrame(especificaciones_totales)
 
+            
+            df.to_excel('especificaciones_modelo_completas.xlsx', index=False)
 
-                            df_modelo = pd.DataFrame(especificaciones_totales)
-
-
-                            nombre_archivo = "Autos.xlsx"
-                            df_modelo.to_excel(nombre_archivo, index=False)
-                            print(f"Guardado: {nombre_archivo}")
-
-                            especificaciones_totales.append(especificaciones_modelo.copy())
-                            print(f"Especificaciones agregadas: {especificaciones_modelo}")
-
-                        
-                
-                    
-                             
-                    
-
+            print("Archivo Excel con los códigos repetidos por fila generado exitosamente.")
+        
         except NoSuchElementException as e:
-            print("ERROR =>", e)
+            print(f"Error: {e}")
+
+
+
+
     def aplicaciones(self):
         especificaciones_totales = []
         marcas = self.driver.find_elements(By.XPATH, "//select[@id='marca-filtros']/option")
@@ -156,23 +152,23 @@ class Catalogo:
                 if valor_marca:
                     print(f"Contador: {contador_marca}, Marca: {texto_marca}, Valor: {valor_marca}")
 
-                    
                     try:
-                        marca.click()
+                        marca.click()  
                     except Exception as e:
                         print(f"Error al hacer clic en la marca: {e}")
-                        continue  
-                   
-                    time.sleep(2)
+                        continue
+
+                    time.sleep(1)
 
                     modelos = self.driver.find_elements(By.XPATH, "//select[@id='modelo-filtros']/option")
 
                     for contador_modelo in range(1, len(modelos) + 1):
-                    
+                        
                         modelo_xpath = f"(//select[@id='modelo-filtros']/option)[{contador_modelo}]"
                         modelo = self.driver.find_element(By.XPATH, modelo_xpath)
                         valor_modelo = modelo.get_attribute('value')
                         texto_modelo = modelo.text.strip()
+
                         if valor_modelo:
                             print(f"Seleccionando Modelo: {texto_modelo}, Valor: {valor_modelo}")
                             modelo.click()
@@ -180,46 +176,55 @@ class Catalogo:
                             buscar_button = self.driver.find_element(By.ID, "buscarTipo-filtros")
                             buscar_button.click()
 
+                            
+
                             img_wrappers = self.driver.find_elements(By.CLASS_NAME, "img-wrapper")
+
                             if not img_wrappers:
                                 print("No hay más img-wrapper en la página.")
                                 break
 
                             for i, img_wrapper in enumerate(img_wrappers):
                                 try:
+                                    
                                     img_wrappers = self.driver.find_elements(By.CLASS_NAME, "img-wrapper")
                                     img_wrapper = img_wrappers[i]
+
                                     link_img_wrapper = img_wrapper.find_element(By.TAG_NAME, 'a')
                                     link_img_wrapper.click()
+
+                                    titulo = self.driver.find_element(By.CLASS_NAME, "title")
+                                    codigo = self.driver.find_element(By.XPATH, "/html/body/section[1]/div[3]/div/div[5]/h2")
                                     boton_vermas = self.driver.find_element(By.ID, "vermas2")
                                     if boton_vermas:
+                                        imagen = self.driver.find_element(By.XPATH, "/html/body/section[1]/div[3]/div/div[4]/img")
+                                        url_imagen = imagen.get_attribute('src')
                                         boton_vermas.click()
-                                        aplicaciones = self.driver.find_elements(By.CLASS_NAME, "content-hidden expand")
-                                        aplicaciones_texto = [aplicacion.text.strip() for aplicacion in aplicaciones]
-                                        equivalencias = self.driver.find_elements(By.CLASS_NAME, "block-table")
-                                        lista_eq = []
-                                        if equivalencias:
-                                            for equivalencia in equivalencias:
-                                                # Extraer el texto completo de las equivalencias
-                                                eq_texto = equivalencia.text.strip()
-                                                strong_elements = equivalencia.find_elements(By.TAG_NAME, 'strong')
-                                                if strong_elements:
-                                                    eq_texto_strong = ' '.join([strong.text.strip() for strong in strong_elements])
-                                                    eq_texto += f" {eq_texto_strong}"  # Añadir el texto de strong al texto general
-                                                lista_eq.append(eq_texto)
-                                                
-                                                filas_dimensiones = self.driver.find_elements(By.XPATH, "//*[@id='dimensiones']/div/table/tbody/tr")
+
+                                        aplicaciones_section = self.driver.find_element(By.CLASS_NAME, "aplicaciones")
+                                        aplicaciones_spans = aplicaciones_section.find_elements(By.CLASS_NAME, "content-hidden")
+                                            
                                         
-                                        # Diccionario para asignar los valores a cada especificación
+
+                                        equivalencias_section = self.driver.find_elements(By.CLASS_NAME, "block-table")
+
+                                        lista_eq = []
+
+                                        # Unir todas las equivalencias en un solo string con saltos de línea
+                                        
+
+
+                                        filas_dimensiones = self.driver.find_elements(By.XPATH, "//*[@id='dimensiones']/div/table/tbody/tr")
+
                                         especificaciones = {
                                             'LARGO': None, 'ANCHO': None, 'ALTO': None, 'Ø EXT.': None,
                                             'Ø INT.': None, 'JUNTA': None, 'VÁLVULA': None, 'PICOS': None,
                                             'TIPO': None, 'ROSCA': None, 'OBSERVACIONES': None
                                         }
-                                        
+
                                         for fila in filas_dimensiones:
                                             celdas = fila.find_elements(By.TAG_NAME, 'td')
-                                            if len(celdas) == 11:  # Asegurarse de que la fila tenga 11 celdas
+                                            if len(celdas) == 11:
                                                 especificaciones['LARGO'] = celdas[0].text.strip()
                                                 especificaciones['ANCHO'] = celdas[1].text.strip()
                                                 especificaciones['ALTO'] = celdas[2].text.strip()
@@ -232,26 +237,32 @@ class Catalogo:
                                                 especificaciones['ROSCA'] = celdas[9].text.strip()
                                                 especificaciones['OBSERVACIONES'] = celdas[10].text.strip()
 
-                                        # Guardar los datos extraídos
                                         especificaciones_totales.append({
                                             "Marca": texto_marca,
                                             "Modelo": texto_modelo,
-                                            "Aplicaciones": aplicaciones_texto,
-                                            "Equivalencias": lista_eq,
-                                            **especificaciones  # Agregar las especificaciones al diccionario
+                                            "Tipo": titulo.text.strip(),
+                                            'Codigo': codigo.text.strip(),
+                                            **especificaciones,
+                                            'URL': url_imagen
                                         })
 
                                         
-                                        time.sleep(2)
+                                       
+
+                                        self.driver.back() 
+                                        
                                         df = pd.DataFrame(especificaciones_totales)
-                                        df.to_excel('ESPECIFICACIONES.xlsx',index=False)
-                                        print("GUARDADO")
-                                        self.driver.back()
+                                        df.to_excel('temp_especificaciones.xlsx', index=False)
+                                        print("DATOS GUARDADOS")
+
+
                                 except NoSuchElementException as e:
-                                    print("ERROR",e)
-                            
+                                    print("ERROR", e)
+
         except NoSuchElementException as e:
-            print("ERROR",e)
+            print("ERROR", e)
+
+
             
             
 class CatalogoPiezas:
@@ -381,7 +392,9 @@ def main():
             
             autos = catalogo.select_categoria("1")
             catalogo.aplicaciones()
-            catalogo.fetch_modelos_marca()
+            
+            
+            
             
             
             if autos:
