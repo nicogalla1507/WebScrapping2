@@ -4,9 +4,7 @@ from selenium.webdriver.support.ui import Select
 import time
 from selenium.common.exceptions import NoSuchElementException
 import pandas as pd
-from openpyxl import load_workbook
-from openpyxl.utils.dataframe import dataframe_to_rows
-from openpyxl.styles import Alignment
+
 
 class WebDriverManager:
     def __init__(self, url):
@@ -201,19 +199,25 @@ class Catalogo:
                                         url_imagen = imagen.get_attribute('src')
                                         boton_vermas.click()
 
-                                        aplicaciones_section = self.driver.find_element(By.CLASS_NAME, "aplicaciones")
-                                        aplicaciones_spans = aplicaciones_section.find_elements(By.CLASS_NAME, "content-hidden")
-                                            
-                                        
 
-                                        equivalencias_section = self.driver.find_elements(By.CLASS_NAME, "block-table")
-
-                                        lista_eq = []
-
-                                        # Unir todas las equivalencias en un solo string con saltos de línea
-                                        
+                                        lista_equivalencias = []
 
 
+                                        contador = 1
+                                        while True:
+                                            try:
+
+                                                marca_eq_xpath = f'//*[@id="equivalencias"]/div[1]/div/div[{contador}]'
+                                                marca_element = self.driver.find_element(By.XPATH, marca_eq_xpath)
+                                                marca_eq = marca_element.text.strip()
+                                                marca_eq = marca_eq.replace('\n', ' ')
+
+                                                lista_equivalencias.append(marca_eq)
+
+                                                contador += 1  
+                                            except Exception as e:
+                                                print(f"No se encontró más equivalencias después de {contador-1} bloques.")
+                                                break
                                         filas_dimensiones = self.driver.find_elements(By.XPATH, "//*[@id='dimensiones']/div/table/tbody/tr")
 
                                         especificaciones = {
@@ -237,23 +241,29 @@ class Catalogo:
                                                 especificaciones['ROSCA'] = celdas[9].text.strip()
                                                 especificaciones['OBSERVACIONES'] = celdas[10].text.strip()
 
-                                        especificaciones_totales.append({
-                                            "Marca": texto_marca,
-                                            "Modelo": texto_modelo,
-                                            "Tipo": titulo.text.strip(),
-                                            'Codigo': codigo.text.strip(),
-                                            **especificaciones,
-                                            'URL': url_imagen
-                                        })
+                                        for equivalencia in lista_equivalencias:
+                                            especificaciones_totales.append({
+                                                "Marca": texto_marca,
+                                                "Modelo": texto_modelo,
+                                                "Tipo": titulo.text.strip(),
+                                                'Codigo': codigo.text.strip(),
+                                                'Equivalencias': equivalencia,
+                                                **especificaciones,
+                                                'URL': url_imagen
+                                            })
 
                                         
                                        
 
                                         self.driver.back() 
                                         
-                                        df = pd.DataFrame(especificaciones_totales)
-                                        df.to_excel('temp_especificaciones.xlsx', index=False)
-                                        print("DATOS GUARDADOS")
+                                        df_final = pd.DataFrame(especificaciones_totales)
+
+                                        # Guardar los datos en un archivo Excel
+                                        df_final.to_excel('datos_finales.xlsx', index=False)
+                                        print("Datos extraídos y guardados en 'datos_finales.xlsx'.")
+
+                                        
 
 
                                 except NoSuchElementException as e:
